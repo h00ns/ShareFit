@@ -12,11 +12,9 @@ import org.springframework.web.multipart.MultipartFile;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "게시글 등록 요청 DTO")
-public class PostCreateDto {
-    @Schema(description = "게시글 제목")
-    private String title;
+public class    PostCreateDto {
     @Schema(description = "게시글 내용")
     private String content;
-    @Schema(description = "게시글 이미지")
-    private MultipartFile image;
+    @Schema(description = "이미지 경로")
+    private String imagePath;
 }

@@ -25,6 +25,7 @@ public class AuthService {
     private Long accessTokenExpiredMs;
     @Value("${spring.jwt.refreshToken_expiration_time}")
     private Long refreshTokenExpiredMs;
+
     public AuthResponseDto login(AuthRequestDto authRequestDto, HttpServletResponse response) {
         MemberResponseDto memberResponseDto = memberService.findByUuid(authRequestDto.getUuid());
 
@@ -35,7 +36,6 @@ public class AuthService {
         String accessToken = jwtUtil.createJwt("access", memberResponseDto, accessTokenExpiredMs);
         String refreshToken = jwtUtil.createJwt("refresh", memberResponseDto, refreshTokenExpiredMs);
 
-        response.setHeader("Authorization", "Bearer " + accessToken);
         response.addCookie(createCookie("refresh", refreshToken));
 
         RefreshToken token = RefreshToken.builder()
@@ -57,7 +57,7 @@ public class AuthService {
         Cookie[] cookies = request.getCookies();
 
         if(cookies == null){
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            throw new IllegalArgumentException("잘못된 요청입니다.");
         }
 
         for(Cookie cookie : cookies){
@@ -68,23 +68,23 @@ public class AuthService {
         }
 
         if(refreshToken == null){
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            throw new IllegalArgumentException("잘못된 요청입니다.");
         }
 
         try {
             jwtUtil.isExpired(refreshToken);
         }
         catch (ExpiredJwtException e){
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            throw new IllegalArgumentException("잘못된 요청입니다.");
         }
 
         String category = jwtUtil.getCategory(refreshToken);
         if(!category.equals("refresh")){
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            throw new IllegalArgumentException("잘못된 요청입니다.");
         }
 
         if(!refreshTokenRepository.exist(refreshToken)){
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            throw new IllegalArgumentException("잘못된 요청입니다.");
         }
 
         refreshTokenRepository.delete(refreshToken);
@@ -94,15 +94,14 @@ public class AuthService {
         String accessToken = jwtUtil.createJwt("access", memberResponseDto, accessTokenExpiredMs);
         refreshToken = jwtUtil.createJwt("refresh", memberResponseDto, refreshTokenExpiredMs);
 
+        response.addCookie(createCookie("refresh", refreshToken));
+
         RefreshToken token = RefreshToken.builder()
                 .uuid(memberResponseDto.getUuid())
                 .refreshToken(refreshToken)
                 .build();
 
         refreshTokenRepository.save(token);
-
-        response.setHeader("Authorization", "Bearer " + accessToken);
-        response.addCookie(createCookie("refresh", refreshToken));
 
         AuthResponseDto authResponseDto = AuthResponseDto.builder()
                 .accessToken(accessToken)

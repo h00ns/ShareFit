@@ -15,10 +15,8 @@ import org.springframework.web.multipart.MultipartFile;
 public class PostUpdateDto {
     @Schema(description = "게시글 ID")
     private Long id;
-    @Schema(description = "게시글 제목")
-    private String title;
     @Schema(description = "게시글 내용")
     private String content;
-    @Schema(description = "게시글 이미지")
-    private MultipartFile image;
+    @Schema(description = "이미지 경로")
+    private String imagePath;
 }

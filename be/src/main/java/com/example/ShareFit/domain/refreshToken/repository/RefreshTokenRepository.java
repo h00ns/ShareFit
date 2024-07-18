@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Repository;
-
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
@@ -18,8 +17,7 @@ public class RefreshTokenRepository {
 
     public void save(RefreshToken refreshToken){
         ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
-        valueOperations.set(refreshToken.getRefreshToken(), refreshToken.getUuid());
-        redisTemplate.expire(refreshToken.getRefreshToken(), refreshTokenExpiredMs, TimeUnit.MILLISECONDS);
+        valueOperations.set(refreshToken.getRefreshToken(), refreshToken.getUuid(), refreshTokenExpiredMs, TimeUnit.MILLISECONDS);
     }
 
     public void delete(String refreshToken){
