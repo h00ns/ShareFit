@@ -1,6 +1,8 @@
 package com.example.ShareFit.security.config;
 
 import com.example.ShareFit.domain.refreshToken.repository.RefreshTokenRepository;
+import com.example.ShareFit.security.LoginSuccessHandler;
+import com.example.ShareFit.security.auth.service.Oauth2UserService;
 import com.example.ShareFit.security.jwt.CustomLogoutFilter;
 import com.example.ShareFit.security.jwt.JwtFilter;
 import com.example.ShareFit.security.jwt.JwtUtil;
@@ -27,6 +29,8 @@ public class SecurityConfig {
 
     private final JwtUtil jwtUtil;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final Oauth2UserService oauth2UserService;
+    private final LoginSuccessHandler loginSuccessHandler;
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
@@ -36,7 +40,7 @@ public class SecurityConfig {
                     @Override
                     public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
                         CorsConfiguration configuration = new CorsConfiguration();
-                        configuration.setAllowedOrigins(List.of("https://share-fit.vercel.app/, https://localhost:3001"));
+                        configuration.setAllowedOrigins(List.of("https://share-fit.vercel.app/", "https://localhost:3001"));
                         configuration.setAllowedMethods(List.of("GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"));
                         configuration.setAllowedHeaders(List.of("*"));
                         configuration.setAllowCredentials(true);
@@ -57,6 +61,13 @@ public class SecurityConfig {
         http
                 .httpBasic((auth) -> auth.disable());
 
+        //OAuth2 설정
+        http
+                .oauth2Login((oauth2) -> oauth2
+                        .userInfoEndpoint((userInfoEndpointConfig) -> userInfoEndpointConfig
+                                .userService(oauth2UserService))
+                        .successHandler(loginSuccessHandler));
+
         //JWTFilter 추가
         http
                 .addFilterBefore(new JwtFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
@@ -71,9 +82,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST,"/post").authenticated()
                         .requestMatchers(HttpMethod.PATCH,"/post/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE,"/post/**").authenticated()
-                        .requestMatchers(HttpMethod.GET,"/test").authenticated()
                         .anyRequest().permitAll());
 
+        //exceptionHandling 설정
         http
                 .exceptionHandling(exceptionHandling -> exceptionHandling
                         .authenticationEntryPoint((request, response, authException) -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))

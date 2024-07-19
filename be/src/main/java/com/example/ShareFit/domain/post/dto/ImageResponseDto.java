@@ -10,10 +10,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "게시글 등록 요청 DTO")
-public class PostCreateDto {
-    @Schema(description = "게시글 내용")
-    private String content;
+@Schema(description = "이미지 등록 응답 DTO")
+public class ImageResponseDto {
     @Schema(description = "게시글 이미지 경로")
     private String imagePath;
 }
