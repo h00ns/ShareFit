@@ -1,6 +1,7 @@
 package com.example.ShareFit.domain.post;
 
 import com.example.ShareFit.common.JpaBaseEntity;
+import com.example.ShareFit.domain.comment.Comment;
 import com.example.ShareFit.domain.member.Member;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -8,6 +9,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.DynamicUpdate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Entity
@@ -20,9 +23,12 @@ public class Post extends JpaBaseEntity {
     private Long id;
     private String content;
     private String imagePath;
+    private Long likes = 0l;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id")
     private Member member;
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
+    private List<Comment> comments = new ArrayList<>();
 
     @Builder
     public Post(String content, String imagePath, Member member) {
@@ -39,5 +45,13 @@ public class Post extends JpaBaseEntity {
         if(imagePath != null && !imagePath.isBlank()){
             this.imagePath = imagePath;
         }
+    }
+
+    public void addLikes(){
+        likes++;
+    }
+
+    public void cancelLikes(){
+        likes--;
     }
 }
