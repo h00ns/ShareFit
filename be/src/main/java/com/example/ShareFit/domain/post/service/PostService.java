@@ -7,9 +7,15 @@ import com.example.ShareFit.domain.post.dto.*;
 import com.example.ShareFit.domain.post.repository.PostRepository;
 import com.example.ShareFit.security.jwt.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -35,9 +41,21 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public PostDetailResponseDto findDetail(String token, Long id) {
+    public PostPopularResponseDto findPopular(String token) {
         Long memberId = jwtUtil.getId(token);
-        Post post = postRepository.findDetailById(id)
+        List<Post> posts = postRepository.findPopularPosts().stream()
+                .sorted(Comparator.comparingLong(this::calculateScore).reversed())
+                .limit(3)
+                .toList();
+
+        return new PostPopularResponseDto(posts, memberId);
+    }
+
+    @Transactional(readOnly = true)
+    @Cacheable(value = "PostDetailResponseDto", key = "#id", cacheManager = "contentCacheManager")
+    public PostDetailResponseDto find(String token, Long id) {
+        Long memberId = jwtUtil.getId(token);
+        Post post = postRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당하는 포스트가 존재하지 않습니다."));
 
         return new PostDetailResponseDto(post, memberId);
@@ -54,6 +72,7 @@ public class PostService {
     }
 
     @Transactional
+    @CachePut(value = "PostDetailResponseDto", key = "#postUpdateDto.getId()", cacheManager = "contentCacheManager")
     public PostDetailResponseDto update(String token, PostUpdateDto postUpdateDto) {
         Long memberId = jwtUtil.getId(token);
         Post post = postRepository.findById(postUpdateDto.getId())
@@ -64,7 +83,15 @@ public class PostService {
     }
 
     @Transactional
+    @CacheEvict(value = "PostDetailResponseDto", key = "#id", cacheManager = "contentCacheManager")
     public void delete(Long id) {
         postRepository.deleteById(id);
+    }
+
+    private int calculateScore(Post post) {
+        int likeCountScore = Long.valueOf(post.getLikeCount()).intValue() / 10;
+        int commentCountScore = post.getComments().size();
+        int createDateScore = (int) (LocalDateTime.now().toLocalDate().toEpochDay() - post.getCreatedDate().toLocalDate().toEpochDay() * 2);
+        return likeCountScore + commentCountScore - createDateScore;
     }
 }
